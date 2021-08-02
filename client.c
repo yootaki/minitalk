@@ -1,6 +1,23 @@
 #include <libc.h>
 #include "libft/libft.h"
 
+int	g_ack;
+
+void	send_eot(int pid)
+{
+	int	i;
+
+	i = -1;
+	while (++i < 8)
+	{
+		usleep(50);
+		if (('\004' >> i) & 1)
+			kill(pid, SIGUSR2);
+		else
+			kill(pid, SIGUSR1);
+	}
+}
+
 void	send_str(int pid, char *msg, int msg_len)
 {
 	int	i;
@@ -12,15 +29,28 @@ void	send_str(int pid, char *msg, int msg_len)
 		j = -1;
 		while (++j < 8)
 		{
-			/* これがないと文字化けする */
 			usleep(50);
-			/* 1の場合USR2 */
-			//USR2は31で基数で1桁目が1だから
 			if ((msg[i] >> j) & 1)
 				kill(pid, SIGUSR2);
 			else
 				kill(pid, SIGUSR1);
 		}
+	}
+}
+
+void	receive_ack(int signal)
+{
+	static int	c;
+	static int	size;
+
+	c += ((signal & 1) << size);
+	size += 1;
+	if (size == 8)
+	{
+		if (c == '\006')
+			g_ack = 1;
+		c = 0;
+		size = 0;
 	}
 }
 
@@ -33,6 +63,18 @@ int	main(int argc, char **argv)
 
 	pid = (pid_t)atoi(argv[1]);
 	send_str(pid, argv[2], ft_strlen(argv[2]));
+
+	/* 文字列を送り終わったらeotを送る */
+	send_eot(pid);
+
+	/* ackを受け取る */
+	while (!g_ack)
+	{
+		signal(SIGUSR1, &receive_ack);
+		signal(SIGUSR2, &receive_ack);
+	}
+
+	write(1, "ok\n", 3);
 
 	return (0);
 }

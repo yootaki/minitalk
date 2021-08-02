@@ -2,20 +2,20 @@
 #include <unistd.h>
 #include "libft/libft.h"
 
-#include <stdio.h>
+void	send_ack(siginfo_t *siginf)
+{
+	int	i;
 
-// typedef struct __siginfo {
-// 	int     si_signo;               /* signal number */
-// 	int     si_errno;               /* errno association */
-// 	int     si_code;                /* signal code */
-// 	pid_t   si_pid;                 /* sending process */
-// 	uid_t   si_uid;                 /* sender's ruid */
-// 	int     si_status;              /* exit value */
-// 	void    *si_addr;               /* faulting instruction */
-// 	union sigval si_value;          /* signal value */
-// 	long    si_band;                /* band event for SIGPOLL */
-// 	unsigned long   __pad[7];       /* Reserved for Future Use */
-// } siginfo_t;
+	i = -1;
+	while (++i < 8)
+	{
+		usleep(50);
+		if (('\006' >> i) & 1)
+			kill(siginf->si_pid, SIGUSR2);
+		else
+			kill(siginf->si_pid, SIGUSR1);
+	}
+}
 
 void	signal_handler(int sig, siginfo_t *siginf, void *context)
 {
@@ -30,7 +30,9 @@ void	signal_handler(int sig, siginfo_t *siginf, void *context)
 	size += 1;
 	if (size == 8)
 	{
-		if (c)
+		if (c == '\004')
+			send_ack(siginf);	/* ackを送信する */
+		else if (c)
 			buf[msg_len++] = c;
 		else
 		{
@@ -65,6 +67,7 @@ int	main(void)
 	pid_t	pid;
 	char	*s_pid;
 
+	/* pidを取得 & ターミナルに表示 */
 	pid = getpid();
 	s_pid = ft_itoa(pid);
 	write(1, s_pid, ft_strlen(s_pid));
