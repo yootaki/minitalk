@@ -66,6 +66,32 @@ void	send_str(int pid, char *msg, int msg_len)
 	}
 }
 
+int	check_pid(const char *str)
+{
+	int	num;
+	int	len;
+	int	i;
+
+	num = 0;
+	len = ft_strlen(str);
+	if (len > 7)
+	{
+		write(1, "Invalid pid.\n", 13);
+		exit (1);
+	}
+	i = -1;
+	while (++i < len)
+	{
+		if (!ft_isdigit(str[i]))
+		{
+			write(1, "Invalid pid.\n", 13);
+			exit (1);
+		}
+		num = num * 10 + (str[i] - '0');
+	}
+	return (num);
+}
+
 int	main(int argc, char **argv)
 {
 	pid_t	pid;
@@ -73,13 +99,15 @@ int	main(int argc, char **argv)
 	if (argc != 3)
 		return (0);
 
-	pid = (pid_t)atoi(argv[1]);
+	pid = (pid_t)check_pid(argv[1]);
+	if (pid <= 1)
+		return (0);
 	send_str(pid, argv[2], ft_strlen(argv[2]));
 
-	/* 文字列を送り終わったらeotを送る */
+	// /* 文字列を送り終わったらeotを送る */
 	// send_eot(pid);
 
-	/* ackを受け取る */
+	// /* ackを受け取る */
 	// while (!g_ack)
 	// {
 	// 	signal(SIGUSR1, &receive_ack);

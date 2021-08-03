@@ -24,7 +24,6 @@ void	signal_handler(int sig, siginfo_t *siginf, void *context)
 	static int	c;
 	static int	size;
 
-	(void)siginf;
 	(void)context;
 	c += ((sig & 1) << size);
 	size += 1;
@@ -70,13 +69,18 @@ int	main(void)
 	/* pidを取得 & ターミナルに表示 */
 	pid = getpid();
 	s_pid = ft_itoa(pid);
+	if (!s_pid)
+		exit(EXIT_FAILURE);
 	write(1, s_pid, ft_strlen(s_pid));
 	write(1, "\n", 1);
 	free(s_pid);
 
 	/* シグナルを受け取るため待機 */
 	while (1)
+	{
 		receive_msg();
+		pause();
+	}
 
 	return (0);
 }
