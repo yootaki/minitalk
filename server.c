@@ -30,12 +30,11 @@ void	signal_handler(int sig, siginfo_t *siginf, void *context)
 	if (size == 8)
 	{
 		if (c == '\004')
-			send_ack(siginf);	/* ackを送信する */
+			send_ack(siginf);
 		else if (c)
 			buf[msg_len++] = c;
 		else
 		{
-			buf[msg_len] = '\n';
 			write(1, buf, ft_strlen(buf));
 			msg_len = 0;
 		}
