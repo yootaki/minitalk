@@ -3,6 +3,22 @@
 
 int	g_ack;
 
+void	receive_ack(int signal)
+{
+	static int	c;
+	static int	size;
+
+	c += ((signal & 1) << size);
+	size += 1;
+	if (size == 8)
+	{
+		if (c == '\006')
+			g_ack = 1;
+		c = 0;
+		size = 0;
+	}
+}
+
 void	send_eot(int pid)
 {
 	int	i;
@@ -35,22 +51,18 @@ void	send_str(int pid, char *msg, int msg_len)
 			else
 				kill(pid, SIGUSR1);
 		}
-	}
-}
-
-void	receive_ack(int signal)
-{
-	static int	c;
-	static int	size;
-
-	c += ((signal & 1) << size);
-	size += 1;
-	if (size == 8)
-	{
-		if (c == '\006')
-			g_ack = 1;
-		c = 0;
-		size = 0;
+		/* 1文字ぶん送り終わったらeotを送る */
+		send_eot(pid);
+		/* ackを受け取る */
+		while (!g_ack || --j >= 0)
+		{
+			signal(SIGUSR1, &receive_ack);
+			signal(SIGUSR2, &receive_ack);
+		}
+		if (g_ack)
+			g_ack = 0;
+		else
+			exit(EXIT_FAILURE);
 	}
 }
 
@@ -65,16 +77,14 @@ int	main(int argc, char **argv)
 	send_str(pid, argv[2], ft_strlen(argv[2]));
 
 	/* 文字列を送り終わったらeotを送る */
-	send_eot(pid);
+	// send_eot(pid);
 
 	/* ackを受け取る */
-	while (!g_ack)
-	{
-		signal(SIGUSR1, &receive_ack);
-		signal(SIGUSR2, &receive_ack);
-	}
-
-	write(1, "ok\n", 3);
+	// while (!g_ack)
+	// {
+	// 	signal(SIGUSR1, &receive_ack);
+	// 	signal(SIGUSR2, &receive_ack);
+	// }
 
 	return (0);
 }
