@@ -5,15 +5,18 @@
 void	send_ack(siginfo_t *siginf)
 {
 	int	i;
+	int	ret;
 
 	i = -1;
 	while (++i < 8)
 	{
 		usleep(50);
 		if (('\006' >> i) & 1)
-			kill(siginf->si_pid, SIGUSR2);
+			ret = kill(siginf->si_pid, SIGUSR2);
 		else
-			kill(siginf->si_pid, SIGUSR1);
+			ret = kill(siginf->si_pid, SIGUSR1);
+		if (ret)
+			exit(EXIT_FAILURE);
 	}
 }
 
@@ -48,7 +51,7 @@ void	signal_handler(int sig, siginfo_t *siginf, void *context)
 	}
 }
 
-void	receive_msg(void)
+int	receive_msg(void)
 {
 	struct sigaction	act;
 
@@ -56,8 +59,11 @@ void	receive_msg(void)
 	act.sa_sigaction = &signal_handler;
 	sigemptyset(&act.sa_mask);
 	act.sa_flags = SA_SIGINFO;
-	sigaction(SIGUSR1, &act, NULL);
-	sigaction(SIGUSR2, &act, NULL);
+	if (sigaction(SIGUSR1, &act, NULL))
+		return (1);
+	if (sigaction(SIGUSR2, &act, NULL))
+		return (1);
+	return (0);
 }
 
 int	main(void)
@@ -69,7 +75,10 @@ int	main(void)
 	pid = getpid();
 	s_pid = ft_itoa(pid);
 	if (!s_pid)
+	{
+		free(s_pid);
 		exit(EXIT_FAILURE);
+	}
 	write(1, s_pid, ft_strlen(s_pid));
 	write(1, "\n", 1);
 	free(s_pid);
@@ -77,7 +86,11 @@ int	main(void)
 	/* シグナルを受け取るため待機 */
 	while (1)
 	{
-		receive_msg();
+		if(receive_msg())
+		{
+			free(s_pid);
+			exit(EXIT_FAILURE);
+		}
 		pause();
 	}
 

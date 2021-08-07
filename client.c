@@ -22,15 +22,18 @@ void	receive_ack(int signal)
 void	send_eot(int pid)
 {
 	int	i;
+	int	ret;
 
 	i = -1;
 	while (++i < 8)
 	{
 		usleep(50);
 		if (('\004' >> i) & 1)
-			kill(pid, SIGUSR2);
+			ret = kill(pid, SIGUSR2);
 		else
-			kill(pid, SIGUSR1);
+			ret = kill(pid, SIGUSR1);
+		if (ret)
+			exit(EXIT_FAILURE);
 	}
 }
 
@@ -38,6 +41,7 @@ void	send_str(int pid, char *msg, int msg_len)
 {
 	int	i;
 	int	j;
+	int	ret;
 
 	i = -1;
 	while (++i <= msg_len)
@@ -47,9 +51,11 @@ void	send_str(int pid, char *msg, int msg_len)
 		{
 			usleep(50);
 			if ((msg[i] >> j) & 1)
-				kill(pid, SIGUSR2);
+				ret = kill(pid, SIGUSR2);
 			else
-				kill(pid, SIGUSR1);
+				ret = kill(pid, SIGUSR1);
+			if (ret)
+				exit(EXIT_FAILURE);
 		}
 		/* 1文字ぶん送り終わったらeotを送る */
 		send_eot(pid);
@@ -62,7 +68,7 @@ void	send_str(int pid, char *msg, int msg_len)
 		if (g_ack)
 			g_ack = 0;
 		else
-			exit(EXIT_FAILURE);
+			exit(EXIT_FAILURE);		//ack受け取れなかったらexit
 	}
 }
 
@@ -97,11 +103,15 @@ int	main(int argc, char **argv)
 	pid_t	pid;
 
 	if (argc != 3)
-		return (0);
-
+		return (1);
+	/* server側のpidを取得する */
 	pid = (pid_t)check_pid(argv[1]);
 	if (pid <= 1)
-		return (0);
+		return (1);
+	/* シグナル0を送信してserverの生存確認 */
+	if (kill(pid, 0))
+		return (1);
+	/* 文字列を送信する(1文字ずつ) */
 	send_str(pid, argv[2], ft_strlen(argv[2]));
 
 	/* 文字列を送り終わったらeotを送る */
@@ -114,6 +124,7 @@ int	main(int argc, char **argv)
 		signal(SIGUSR2, &receive_ack);
 	}
 
+	/* 最後のackが帰ってきたら送信完了 */
 	if (g_ack)
 		write(1, "SUCCESS!!!\n", 11);
 
