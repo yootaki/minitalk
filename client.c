@@ -104,15 +104,18 @@ int	main(int argc, char **argv)
 		return (0);
 	send_str(pid, argv[2], ft_strlen(argv[2]));
 
-	// /* 文字列を送り終わったらeotを送る */
-	// send_eot(pid);
+	/* 文字列を送り終わったらeotを送る */
+	send_eot(pid);
 
-	// /* ackを受け取る */
-	// while (!g_ack)
-	// {
-	// 	signal(SIGUSR1, &receive_ack);
-	// 	signal(SIGUSR2, &receive_ack);
-	// }
+	/* ackを受け取る */
+	while (!g_ack)
+	{
+		signal(SIGUSR1, &receive_ack);
+		signal(SIGUSR2, &receive_ack);
+	}
+
+	if (g_ack)
+		write(1, "SUCCESS!!!\n", 11);
 
 	return (0);
 }
