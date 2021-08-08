@@ -1,21 +1,21 @@
-#include <libc.h>
-#include "libft/libft.h"
-
-int	g_ack;
+#include "minitalk.h"
 
 void	receive_ack(int signal)
 {
 	static int	c;
-	static int	size;
+	static int	bit;
 
-	c += ((signal & 1) << size);
-	size += 1;
-	if (size == 8)
+	c += ((signal & 1) << bit);
+	bit += 1;
+	if (bit == 8)
 	{
-		if (c == '\006')
-			g_ack = 1;
+		if (c != ACK)
+		{
+			write(2, "receive ack error !\n", 17);
+			exit(EXIT_FAILURE);
+		}
 		c = 0;
-		size = 0;
+		bit = 0;
 	}
 }
 
@@ -28,7 +28,7 @@ void	send_eot(int pid)
 	while (++i < 8)
 	{
 		usleep(50);
-		if (('\004' >> i) & 1)
+		if ((EOT >> i) & 1)
 			ret = kill(pid, SIGUSR2);
 		else
 			ret = kill(pid, SIGUSR1);
@@ -60,16 +60,14 @@ void	send_str(int pid, char *msg, int msg_len)
 		/* 1文字ぶん送り終わったらeotを送る */
 		send_eot(pid);
 		/* ackを受け取る */
-		while (!g_ack || --j >= 0)
+		while (--j >= 0)
 		{
 			signal(SIGUSR1, &receive_ack);
 			signal(SIGUSR2, &receive_ack);
+			pause();
 		}
-		if (g_ack)
-			g_ack = 0;
-		else
-			exit(EXIT_FAILURE);		//ack受け取れなかったらexit
 	}
+	write(1, "SUCCESS!!!\n", 11);
 }
 
 int	check_pid(const char *str)
@@ -82,16 +80,16 @@ int	check_pid(const char *str)
 	len = ft_strlen(str);
 	if (len > 7)
 	{
-		write(1, "Invalid pid.\n", 13);
-		exit (1);
+		write(2, "Invalid pid.\n", 13);
+		exit (EXIT_FAILURE);
 	}
 	i = -1;
 	while (++i < len)
 	{
 		if (!ft_isdigit(str[i]))
 		{
-			write(1, "Invalid pid.\n", 13);
-			exit (1);
+			write(2, "Invalid pid.\n", 13);
+			exit (EXIT_FAILURE);
 		}
 		num = num * 10 + (str[i] - '0');
 	}
@@ -113,20 +111,6 @@ int	main(int argc, char **argv)
 		return (1);
 	/* 文字列を送信する(1文字ずつ) */
 	send_str(pid, argv[2], ft_strlen(argv[2]));
-
-	/* 文字列を送り終わったらeotを送る */
-	send_eot(pid);
-
-	/* ackを受け取る */
-	while (!g_ack)
-	{
-		signal(SIGUSR1, &receive_ack);
-		signal(SIGUSR2, &receive_ack);
-	}
-
-	/* 最後のackが帰ってきたら送信完了 */
-	if (g_ack)
-		write(1, "SUCCESS!!!\n", 11);
 
 	return (0);
 }
