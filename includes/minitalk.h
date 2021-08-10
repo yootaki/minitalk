@@ -8,6 +8,8 @@
 
 # define EOT 4
 # define ACK 6
-# define BUFF_MAX 10
+# define BUFF_MAX 1000
+# define MAX_PID 99998
+# define MIN_PID 100
 
 #endif

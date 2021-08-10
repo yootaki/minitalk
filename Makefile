@@ -5,16 +5,22 @@ SERVER = server
 CC = gcc
 CFLAGS = -Wall -Wextra -Werror
 
-LIBS = libft/libft.a
+LIBS = includes/libft/libft.a
 
 DEBUG_DIR = client.dSYM server.dSYM
 
 # **************************************************
 # **************************************************
 
-all: $(LIBS)
+all: $(CLIENT) $(SERVER)
+
+$(CLIENT): $(LIBS)
 	$(CC) $(CFLAGS) -o $(CLIENT) client.c $(LIBS)
+$(SERVER): $(LIBS)
 	$(CC) $(CFLAGS) -o $(SERVER) server.c $(LIBS)
+
+$(LIBS):
+	$(MAKE) -C includes/libft/
 
 bonus: all
 
@@ -23,6 +29,7 @@ bonus: all
 
 clean:
 	rm -rf $(DEBUG_DIR)
+	$(MAKE) fclean -C includes/libft/
 
 fclean: clean
 	rm -f $(CLIENT)
