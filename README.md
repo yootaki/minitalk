@@ -3,5 +3,5 @@
 
 ## Usage
 ```
-git clone https://github.com/yootaki/minitalk
+git clone https://github.com/yootaki/minitalk.git
 ```
